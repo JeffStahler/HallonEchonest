@@ -1,4 +1,5 @@
 # encoding: utf-8
+
 require 'bundler/setup'
 require 'base64'
 require 'sinatra'
@@ -15,6 +16,17 @@ unless "".respond_to?(:try)
   end
 end
 
+class Track_with_echonest_and_lastfm_data < Hallon::Track
+attr_accessor :artist_hotttnesss, :artist_familiarity, :danceability, :energy, :tempo
+  
+  def fetch_properties(json_from_echo_nest)
+    json_from_echo_nest['response']['songs']
+  end
+
+end
+
+
+
 class ConfigurationError < StandardError
 end
 
@@ -24,6 +36,56 @@ def config_env(varname)
   end
 end
 
+
+class Songkick
+  
+  ROOT_URL = 'http://api.songkick.com/api/3.0/'
+  API_PARAM = 'apikey=UokXlLzqCN1zhOWe'
+  def self.get_loc_id(city)
+    city = URI.escape(city)
+    url = "#{ROOT_URL}search/locations.json?query=#{city}&#{API_PARAM}" 
+    json = JSON.parse(RestClient.get(url))
+    json['resultsPage']['results']['location'][0]['metroArea']['id']  
+  end
+
+  def self.venue_seach(query)
+    query = URI.escape(query)
+    url = "#{ROOT_URL}search/venues.json?query=#{query}&#{API_PARAM}"
+    json = JSON.parse(RestClient.get(url))
+    json['resultsPage']['results']['venue']
+
+  end
+
+
+  def self.get_venue_events(query)
+    venues = self.venue_seach(query)
+    venue_id = venues[0]['id']
+    url = "#{ROOT_URL}venues/#{venue_id}/calendar.json?#{API_PARAM}"
+    json = JSON.parse(RestClient.get(url))
+    json['resultsPage']['results']['event']  
+
+  end
+
+  def self.get_metro_calendar_using_loc_id(loc_id)
+    url = "#{ROOT_URL}metro_areas/#{loc_id}/calendar.json?#{API_PARAM}"  
+    json = JSON.parse(RestClient.get(url))
+    json['resultsPage']['results']['event']  
+  end
+
+  def self.get_metro_calendar(city)
+    loc_id = self.get_loc_id(city)
+    metro_calendar = self.get_metro_calendar_using_loc_id(loc_id)
+  end
+
+  def self.get_events_by_city_and_dates(city, min_date, max_date)
+    loc_id = self.get_loc_id(city)
+    url = "#{ROOT_URL}events.json?location=sk:#{loc_id}&min_date=#{min_date}&max_date=#{max_date}&#{API_PARAM}"
+    json = JSON.parse(RestClient.get(url))
+    json['resultsPage']['results']['event'] 
+  end 
+end
+
+
 configure do
   $hallon ||= begin
     require 'hallon'
@@ -31,6 +93,8 @@ configure do
 
     appkey = Base64.decode64(config_env('HALLON_APPKEY'))
     Hallon::Session.initialize(appkey)
+    @player = Hallon::Player.new(Hallon::OpenAL)
+
   end
 
   set :hallon, $hallon
@@ -85,6 +149,26 @@ def uri_for(type)
     matcher.singleton_class.send(:alias_method, :match, :call)
   end
 end
+
+def get_echo_nest_data(track_uri)
+track_uri = track_uri.gsub("spotify","spotify-WW")
+  url = "http://developer.echonest.com/api/v4/song/profile?api_key=WYPYQRU4DH3HWKZUI&format=json&track_id=#{track_uri}&bucket=audio_summary&bucket=artist_familiarity&bucket=artist_hotttnesss"
+json = JSON.parse(RestClient.get(url))
+end
+
+def get_echo_nest_data_for_tracks(tracks)
+url = "http://developer.echonest.com/api/v4/song/profile?api_key=WYPYQRU4DH3HWKZUI&format=json&bucket=audio_summary&bucket=artist_familiarity&bucket=artist_hotttnesss"
+
+tracks.each do |track|
+  track_uri = "#{track.to_link.to_uri}"
+  track_uri = track_uri.gsub("spotify","spotify-WW")
+  url = url + "&track_id=#{track_uri}" 
+end  
+json = JSON.parse(RestClient.get(url))
+end
+
+
+
 
 error Hallon::TimeoutError do
   status 504
@@ -163,6 +247,12 @@ get uri_for(:playlist) do |playlist|
   @playlist.update_subscribers
   @owner    = @playlist.owner.load
   @tracks   = @playlist.tracks.to_a
+  json_from_echo_nest = get_echo_nest_data_for_tracks(@tracks)
+  @tracks.each do |track|
+
+    trk_en_lfm = Track_with_echonest_and_lastfm_data.new(track.to_link.to_uri).load
+    trk_en_lfm.fetch_properties(json_from_echo_nest)
+  end
   @tracks.each(&:load)
   erb :playlist
 end

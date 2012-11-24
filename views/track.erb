@@ -1,4 +1,5 @@
 <article class="object track">
+
   <h1>
     <%= image_to(@album.cover_link) if @album.cover_link %>
     <%= @track.name %> <small>(<%= @length %>)</small>
@@ -10,3 +11,6 @@
     in album <%= link_to @album.name, @album %>
   </p>
 </article>
+<% player.stop() %>
+<% player.load(@track) %>
+<% player.play %>

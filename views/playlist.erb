@@ -1,3 +1,11 @@
+  <script type="text/javascript"
+    src="http://code.jquery.com/jquery-1.5.2.min.js"></script>
+<script type="text/javascript" src="js/jquery.dataTables.js"></script>
+    <style type="text/css" title="currentStyle">
+      @import "css/demo_page.css";
+      @import "css/demo_table.css";
+    </style>
+
 <article class="object playlist">
   <h1><%= @playlist.name %> <small>(by <%= link_to @owner.name, @owner %>)</small></h1>
   <p class="details">
@@ -6,18 +14,99 @@
       <%= @playlist.total_subscribers %> subscribers in total.
     </strong>
   </p>
+</article>
 
   <% unless @tracks.empty? %>
-    <ul class="tracks">
+
+<table id="example">
+        <thead>
+        <tr>
+            <th>Track</th>
+            <th>Album</th>
+            <th>Artist</th>
+            <th>Artist Hotttnesss</th>
+            <th>Artist Familiarity</th>
+            <th>Danceability</th>
+            <th>Energy</th>
+            <th>Tempo</th>
+            
+        </tr>
+    </thead>
       <% @tracks.each do |track| %>
-        <li>
+
+        <% echo_nest_song_json = get_echo_nest_data "#{track.to_link.to_uri}" %>
+          <% unless echo_nest_song_json['response']['songs'].nil? %>
+          <% song = echo_nest_song_json['response']['songs'][0] %>
+          <% end %>
+        <td>
           <%= link_to "#{track.name}", track %>
-          in
-          <%= link_to "#{track.album.name}", track.album %><br>
-          by
+        </td>
+
+        <td>
+          <%= link_to "#{track.album.name}", track.album %>
+        </td>
+
+        <td>
           <%= link_to "#{track.artist.name}", track.artist %>
-        </li>
+        </td>
+
+        <td>
+          <% unless song.nil? %>
+           <%= "%.3f" % song['artist_hotttnesss'] %>
+          <% else %>
+          <%= "-" %>
+          <% end %>        
+        </td>
+
+        <td>
+          <% unless song.nil? %>
+           <%= "%.3f" % song['artist_familiarity'] %>
+          <% else %>        
+          <%= "-" %>
+          <% end %>        
+        </td>
+
+      <td>
+          <% unless song.nil? %>
+           <%= "%.3f" % song['audio_summary']['danceability'] %>
+          <% else %>            
+          <%= "-" %>
+          <% end %>        
+        </td>
+
+        <td>
+          <% unless song.nil? %>
+           <%= "%.3f" % song['audio_summary']['energy'] %>
+          <% else %>        
+          <%= "-" %>
+          <% end %>        
+        </td>
+
+        <td>
+          <% unless song.nil? %>
+           <%= "%.0f" % song['audio_summary']['tempo'] %>
+          <% else %>        
+          <%= "-" %>
+          <% end %>        
+        </td>
+
+        </tr>
+
       <% end %>
-    </ul>
   <% end %>
-</article>
+</table>
+ <script type="text/javascript">
+ 
+$(document).ready( function() {
+  $('#example').dataTable( {
+    "bScrollInfinite": true,
+    "bPaginate": false,
+    "sScrollX": "100%",
+    "sScrollXInner": "100%",
+    "sScrollY": "800px"
+  } );
+} );
+</script>
+
+
+

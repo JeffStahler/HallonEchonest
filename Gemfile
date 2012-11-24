@@ -1,6 +1,7 @@
 source :rubygems
-
-gem 'hallon', github: 'Burgestrand/Hallon'
+gem 'rest-client'
+gem 'hallon-openal'
+gem 'hallon', git: 'https://github.com/Burgestrand/Hallon.git'
 gem 'sinatra'
 
 group :development do
