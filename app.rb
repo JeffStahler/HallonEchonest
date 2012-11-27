@@ -1,8 +1,9 @@
 # encoding: utf-8
-
+require 'hallon'
 require 'bundler/setup'
 require 'base64'
 require 'sinatra'
+require 'addressable/uri'
 require 'sinatra/reloader' if development?
 
 unless "".respond_to?(:try)
@@ -89,11 +90,11 @@ end
 configure do
   $hallon ||= begin
     require 'hallon'
-    Hallon.load_timeout = 10
+    Hallon.load_timeout = 0
 
     appkey = Base64.decode64(config_env('HALLON_APPKEY'))
     Hallon::Session.initialize(appkey)
-    @player = Hallon::Player.new(Hallon::OpenAL)
+    #@player = Hallon::Player.new(Hallon::OpenAL)
 
   end
 
@@ -157,14 +158,17 @@ json = JSON.parse(RestClient.get(url))
 end
 
 def get_echo_nest_data_for_tracks(tracks)
-url = "http://developer.echonest.com/api/v4/song/profile?api_key=WYPYQRU4DH3HWKZUI&format=json&bucket=audio_summary&bucket=artist_familiarity&bucket=artist_hotttnesss"
+uri = Addressable::URI.parse("http://developer.echonest.com/api/v4/song/profile")
+query_array = [["api_key", "WYPYQRU4DH3HWKZUI"], ["format", "json"] , ["bucket" "audio_summary"], ["bucket", "artist_familiarity"] , ["bucket" "artist_hotttnesss"]]
+
 
 tracks.each do |track|
   track_uri = "#{track.to_link.to_uri}"
   track_uri = track_uri.gsub("spotify","spotify-WW")
-  url = url + "&track_id=#{track_uri}" 
-end  
-json = JSON.parse(RestClient.get(url))
+  query_array << ["track_id", track_uri]  
+end
+uri.query_values = query_array
+json = JSON.parse(RestClient.get(uri.to_str))
 end
 
 

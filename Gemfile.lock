@@ -10,6 +10,7 @@ GIT
 GEM
   remote: http://rubygems.org/
   specs:
+    addressable (2.3.2)
     backports (2.6.4)
     coderay (1.0.7)
     eventmachine (1.0.0)
@@ -57,6 +58,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  addressable
   foreman
   hallon!
   hallon-openal
