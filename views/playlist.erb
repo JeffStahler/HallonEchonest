@@ -16,8 +16,6 @@
   </p>
 </article>
 
-  <% unless @tracks.empty? %>
-
 <table id="example">
         <thead>
         <tr>
@@ -32,12 +30,8 @@
             
         </tr>
     </thead>
-      <% @tracks.each do |track| %>
-
-        <% echo_nest_song_json = get_echo_nest_data "#{track.to_link.to_uri}" %>
-          <% unless echo_nest_song_json['response']['songs'].nil? %>
-          <% song = echo_nest_song_json['response']['songs'][0] %>
-          <% end %>
+       <% @tracks.each do |track| %>
+       <tr id>
         <td>
           <%= link_to "#{track.name}", track %>
         </td>
@@ -50,63 +44,74 @@
           <%= link_to "#{track.artist.name}", track.artist %>
         </td>
 
-        <td>
-          <% unless song.nil? %>
-           <%= "%.3f" % song['artist_hotttnesss'] %>
-          <% else %>
-          <%= "-" %>
-          <% end %>        
-        </td>
+        <td hotttnesss=<%= "#{get_echo_nest_id(track)}" %>></td>
 
-        <td>
-          <% unless song.nil? %>
-           <%= "%.3f" % song['artist_familiarity'] %>
-          <% else %>        
-          <%= "-" %>
-          <% end %>        
-        </td>
+        <td familiarity=<%= "#{get_echo_nest_id(track)}" %>></td>
 
-      <td>
-          <% unless song.nil? %>
-           <%= "%.3f" % song['audio_summary']['danceability'] %>
-          <% else %>            
-          <%= "-" %>
-          <% end %>        
-        </td>
+        <td danceability=<%= "#{get_echo_nest_id(track)}" %>></td>
 
-        <td>
-          <% unless song.nil? %>
-           <%= "%.3f" % song['audio_summary']['energy'] %>
-          <% else %>        
-          <%= "-" %>
-          <% end %>        
-        </td>
+        <td energy=<%= "#{get_echo_nest_id(track)}" %>></td>
 
-        <td>
-          <% unless song.nil? %>
-           <%= "%.0f" % song['audio_summary']['tempo'] %>
-          <% else %>        
-          <%= "-" %>
-          <% end %>        
-        </td>
+        <td tempo=<%= "#{get_echo_nest_id(track)}" %>></td>
 
         </tr>
 
       <% end %>
-  <% end %>
+
 </table>
  <script type="text/javascript">
  
 $(document).ready( function() {
-  $('#example').dataTable( {
+ 
+    $('#example').dataTable( {
     "bScrollInfinite": true,
     "bPaginate": false,
     "sScrollX": "100%",
     "sScrollXInner": "100%",
     "sScrollY": "800px"
-  } );
-} );
+  } )  
+
+function fill_row_with_echo_nest_data(ec_id){
+  return function(json,textStatus){
+    try
+    {
+    $('td[hotttnesss="' + ec_id + '"]').text(json.response.songs[0].artist_hotttnesss.toPrecision(3))
+    $('td[familiarity="' + ec_id + '"]').text(json.response.songs[0].artist_familiarity.toPrecision(3))
+    $('td[danceability="' + ec_id + '"]').text(json.response.songs[0].audio_summary.danceability.toPrecision(3))
+    $('td[energy="' + ec_id + '"]').text(json.response.songs[0].audio_summary.energy.toPrecision(3))
+    $('td[tempo="' + ec_id + '"]').text(json.response.songs[0].audio_summary.tempo.toPrecision(3))
+    }
+    catch(err)
+    {
+    $('td[hotttnesss="' + ec_id + '"]').text("")
+    $('td[familiarity="' + ec_id + '"]').text("")
+    $('td[danceability="' + ec_id + '"]').text("")
+    $('td[energy="' + ec_id + '"]').text("")
+    $('td[tempo="' + ec_id + '"]').text("")      
+    }
+  };
+};
+
+
+ $(document).ajaxStop(function () {
+   $('#example').dataTable( {
+    "bScrollInfinite": true,
+    "bPaginate": false,
+    "sScrollX": "100%",
+    "sScrollXInner": "100%",
+    "sScrollY": "800px",
+    "bDestroy": true
+  } )
+        });
+var oTable = $('#example').dataTable(); 
+en_url =  "http://developer.echonest.com/api/v4/song/profile?api_key=WYPYQRU4DH3HWKZUI&format=json&track_id="
+  
+  for (i=0;i<gon.echo_nest_ids.length;i++)
+  {
+    ec_id = gon.echo_nest_ids[i]
+    $.getJSON(en_url + ec_id + '&bucket=audio_summary&bucket=artist_familiarity&bucket=artist_hotttnesss',
+     fill_row_with_echo_nest_data(ec_id) 
+     );
+  }
+});
 </script>
-
-
-

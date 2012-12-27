@@ -17,8 +17,11 @@ GEM
     ffi (1.1.5)
     foreman (0.57.0)
       thor (>= 0.13.6)
+    gon-sinatra (0.1.0)
+      sinatra
     hallon-openal (1.0.0)
       hallon (~> 0.13)
+    json (1.7.5)
     libspotify (12.1.51.1)
     method_source (0.8)
     mime-types (1.18)
@@ -60,8 +63,10 @@ PLATFORMS
 DEPENDENCIES
   addressable
   foreman
+  gon-sinatra
   hallon!
   hallon-openal
+  json
   pry
   rest-client
   sinatra

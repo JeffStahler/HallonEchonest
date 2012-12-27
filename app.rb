@@ -4,7 +4,12 @@ require 'bundler/setup'
 require 'base64'
 require 'sinatra'
 require 'addressable/uri'
+require 'json'
+require 'gon-sinatra'
 require 'sinatra/reloader' if development?
+
+
+Sinatra::register Gon::Sinatra
 
 unless "".respond_to?(:try)
   class Object
@@ -155,7 +160,17 @@ def get_echo_nest_data(track_uri)
 track_uri = track_uri.gsub("spotify","spotify-WW")
   url = "http://developer.echonest.com/api/v4/song/profile?api_key=WYPYQRU4DH3HWKZUI&format=json&track_id=#{track_uri}&bucket=audio_summary&bucket=artist_familiarity&bucket=artist_hotttnesss"
 json = JSON.parse(RestClient.get(url))
+json['response']['songs'][0]
+
 end
+
+
+def get_echo_nest_id(track)
+track_uri = track.to_link.to_uri
+track_uri = track_uri.gsub("spotify","spotify-WW")
+
+end
+
 
 def get_echo_nest_data_for_tracks(tracks)
 uri = Addressable::URI.parse("http://developer.echonest.com/api/v4/song/profile")
@@ -167,6 +182,7 @@ tracks.each do |track|
   track_uri = track_uri.gsub("spotify","spotify-WW")
   query_array << ["track_id", track_uri]  
 end
+
 uri.query_values = query_array
 json = JSON.parse(RestClient.get(uri.to_str))
 end
@@ -251,12 +267,15 @@ get uri_for(:playlist) do |playlist|
   @playlist.update_subscribers
   @owner    = @playlist.owner.load
   @tracks   = @playlist.tracks.to_a
-  json_from_echo_nest = get_echo_nest_data_for_tracks(@tracks)
-  @tracks.each do |track|
+  @echo_nest_ids = @tracks.collect{|x| get_echo_nest_id(x)}
+ # @echo_nest_ids = @echo_nest_ids.to_enum
+  gon.echo_nest_ids = @echo_nest_ids
+  #json_from_echo_nest = get_echo_nest_data_for_tracks(@tracks)
+  #@tracks.each do |track|
 
-    trk_en_lfm = Track_with_echonest_and_lastfm_data.new(track.to_link.to_uri).load
-    trk_en_lfm.fetch_properties(json_from_echo_nest)
-  end
+ #   trk_en_lfm = Track_with_echonest_and_lastfm_data.new(track.to_link.to_uri).load
+ #   trk_en_lfm.fetch_properties(json_from_echo_nest)
+ # end
   @tracks.each(&:load)
   erb :playlist
 end
